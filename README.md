@@ -1,4 +1,4 @@
-# MimiJSLogParser
+# JSMimiLogParser
 
 Mimikatz log parser, written in JS, hosted in a browser (client side)
 

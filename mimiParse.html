@@ -35,6 +35,7 @@
 
 </fieldset>
 <table id="tbl"></table>
+<button id=btnExp onclick="ExportToExcel()">Export</button>
 </form>
 <script>
 results= [];
@@ -48,6 +49,25 @@ function ParseFile(file)
 		SHA1 = "";
 	};
 	
+	function proper(line,prefix,logMsg,property)
+	{	
+		if (line.startsWith(prefix))
+			{				
+				var value = line.replace(prefix,"");
+				if(value != "(null)" && value != property)
+					{
+						console.log("update " + logMsg + ":" + property + "->" + value);
+						return value;						
+					}					
+			}
+		if(property == undefined)
+		{
+			property = "";
+		}		
+		return property;
+	}
+	
+	console.log("parsing:" + file.name);
 	var dict = {};
 	if (file.type.indexOf("text") == 0) {
 		var reader = new FileReader();				
@@ -71,44 +91,30 @@ function ParseFile(file)
 					{
 						e = element;	
 						found = true;
-					}
-				});				
+						console.log("entity exists:" + e.Domain + "\\" + e.UserName);
+					}					
+				});	
+				if (!found)
+				{								
+					console.log("new entity:" + e.Domain + "\\" + e.UserName);					
+				}
 				for(j=1; j < lines.length-1; j++)
 				{
 					line = lines[j].trim();
-					if (line.startsWith('* Password : '))
-					{
-						mPass = line.replace('* Password : ',"");
-						if(mPass != "(null)")
-						{
-							e.Password =  mPass;
-						}
-						continue;
-					}
-					if (line.startsWith('* NTLM     : '))
-					{
-						mNTLM = line.replace('* NTLM     : ',"");						
-						e.NTLM = mNTLM;
-						continue;
-					}
-					if (line.startsWith('* SHA1     : '))
-					{
-						mSHA1 = line.replace('* SHA1     : ',"");
-						e.SHA1 = mSHA1;
-						continue;
-					}					
+					e.Password = proper(line, '* Password : ', 'pass', e.Password);
+					e.NTLM = proper(line, '* NTLM     : ', 'NTLM', e.NTLM);
+					e.SHA1 =  proper(line, '* SHA1     : ', 'SHA1', e.SHA1);
 				}					
 				if(!results.includes(e))
 				{	
 					results.push(e);													
 				}				
-			}			
-			//document.getElementById("tbl").innerHTML = "";
-			document.getElementById("tbl").innerHTML = "<tr><td>Domain</td><td>UserName</td><td>Password</td><td>NTLM</td><td>SHA1</td></tr>"
+			}						
+			document.getElementById("tbl").innerHTML = "<tr><td>Domain\\UserName</td><td>Password</td><td>NTLM</td><td>SHA1</td></tr>"
 			results.forEach(function(element) {
 					var myJSON = JSON.stringify(element);
 					var pass = element.Password;					
-					document.getElementById("tbl").innerHTML += "<tr><td>" + element.Domain + "</td><td>" + element.UserName + "</td><td>" + pass + "</td><td>" + element.NTLM + "</td><td>" + element.SHA1 + "</td></tr>"
+					document.getElementById("tbl").innerHTML += "<tr><td>" + element.Domain + "\\" + element.UserName + "</td><td>" + pass + "</td><td>" + element.NTLM + "</td><td>" + element.SHA1 + "</td></tr>"
 				});			
 		}		
 		reader.readAsText(file);		
@@ -128,7 +134,7 @@ function FileSelectHandler(e) {
 		var files = e.target.files || e.dataTransfer.files;
 
 		// process all File objects
-		for (var i = 0, f; f = files[i]; i++) {			
+		for (var i = 0, f; f = files[i]; i++) {
 			ParseFile(f);
 		}
 
@@ -137,8 +143,14 @@ function FileSelectHandler(e) {
 filedrag.addEventListener("dragover", FileDragHover, false);
 filedrag.addEventListener("dragleave", FileDragHover, false);
 filedrag.addEventListener("drop", FileSelectHandler, false);
-filedrag.style.display = "block";			
+filedrag.style.display = "block";	
+
+
+function ExportToExcel(){
+       var htmltable= document.getElementById('tbl');
+       var html = htmltable.outerHTML;
+       window.open('data:application/vnd.ms-excel,' + encodeURIComponent(html));
+    }
 </script>
 </body>
 </html>
-
